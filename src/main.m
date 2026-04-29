@@ -51,89 +51,95 @@ dd = full(sum(A,2));
 L = laplacian(A);
 [V,lam] = eig(full(L),"vector");
 
-% x = 1/n*ones(n,1);
-% x = sin(4*pi*(0:(n-1))/n).^4.';
-% x = tanh(sin(2*pi*40.1*(1:n)/n)).';
-% w = 1-1/n*(1:n).'
-% w = 1./(1:n).';
-% w = exp(-(1:n).');
-% w = 1 - (1/n*(1:n).').^2;
-w = 1 - (1/n*(0:(n-1)).').^(1/2);
-% w = 1/n*ones(n,1);
-x = V * w;
-y = L * x;
+% set signal either directly (x)
+% x = 1/n*ones(n,1);                    % uniform signal
+
+% or set signal indirectly by structuring the eigenvector expansion coeffs
+% w = 1-1/n*(1:n).'                     % linearly decaying mode weights
+% w = 1./(1:n).';                       % decay like 1/n
+% w = exp(-(1:n).');                    % exponential decay
+% w = 1 - (1/n*(1:n).').^2;             % quadratic decay
+w = 1 - (1/n*(0:(n-1)).').^(1/2);       % square root decay
+% w = 1/n*ones(n,1);                    % uniform spectrum
+x = V * w;                              % assemble expansion
+y = L * x;                              % compute unfiltered output
 
 %% 1. Declare ideal filter h(lambda)
 
-cutoff = 1;
-% h = idealLPF(cutoff);
-% cutoff_idx = find(lam > cutoff,1);
+cutoff = 1;         
+h = idealLPF(cutoff);
+cutoff_idx = find(lam > cutoff,1);
+
 % h = idealHPF(cutoff);
 % cutoff_idx = find(lam < cutoff,1);
-h = idealBPF(cutoff,cutoff+1);
-cutoff_idx = find(lam < cutoff,1);
+
+% h = idealBPF(cutoff,cutoff+1);
+% cutoff_idx = find(lam < cutoff,1);
 
 %% 2. Compute L=VDV^{-1} and exact application y = Vh(D)V^{-1}x
 
-Lh = V * diag(h(lam)) * V.';
-yh = Lh * x;
+Lh = V * diag(h(lam)) * V.';            % compute exactly filtered Laplacian h(L)
+yh = Lh * x;                            % compute exactly filtered signal
 
-VD = V * diag(lam);
-VhD = V * diag(h(lam));
+VD = V * diag(lam);                     % compute weighted eigenvectors
+VhD = V * diag(h(lam));                 % compute filter weighted eigenvectors
 
 %% 3a. Compute rational approximation r(lambda) ~= h(lambda)
 
 % generic upper bound for lambda is 2*max(degree)
-m = 2000;
-zz = linspace(0,2*max(dd),m-1).';
-% zz = [zz; cutoff];
+m = 1000;
+% zz = linspace(0,2*max(dd),m-1).';         % linearly spaced points
+
+zz = [                                      % two intervals of exponentially clustered points near cutoff
+    expClust(m,a=0,b=cutoff,reverse=true,exponent=1/2);
+    expClust(m,a=cutoff,b=2*max(dd),exponent=1/2)
+];
+
 m = length(zz);
 
-% λ(t)=λ∗+(λmax​−λ∗)⋅sign(t)∣t∣1/2,t∈[−1,1]
-
-% tt = linspace(-1,1,m-1);
-% zz = (cutoff + (2*max(dd)-cutoff) .* sign(tt) .* sqrt(abs(tt))).';
-
-hh = h(zz);
+hh = h(zz);         % compute reference data for filtered sample points
 
 tol = 1e-13;
-% [r, pol, res, zer, zj, fj, wj, errvec] = aaa(hh, zz, 'tol', tol, 'lawson', 0, 'cleanup', 0);
-[r, pol, res, zer, zj, fj, wj, errvec] = aaa(hh, zz, 'tol', tol);
+[r, pol, res, zer, zj, fj, wj, errvec] = aaa(hh, zz, 'tol', tol);   % AAA algorithm
 % I = find(wj == 0);
 % zj(I) = []; wj(I) = []; fj(I) = [];
-[pol, res, zer] = prz(zj, fj, wj);
+[pol, res, zer] = prz(zj, fj, wj);      % compute poles, residues, and zeros of r
 
-I = find(imag(pol) == 0);
+% I = find(imag(pol) == 0);                                                 % remove all real poles
+I = find((imag(pol) == 0) .* (real(pol) >= 0) .* (real(pol) <= 2*max(dd)))  % remove real poles in approximation domain
 pol(I) = []; res(I) = [];
 
 % AA = [ones(m,1) 1./(zz - pol.')];
-AA = [1./(zz - pol.')];
-bb = hh;
-aa = AA\bb;
+AA = [1./(zz - pol.')];             % set up least-squares matrix for preset poles
+bb = hh;                            % RHS is filtered sample points
+aa = AA\bb;                         % compute LS residues
 
 % rpf = @(zz) pfeval(zz, pol, aa(2:end), a0=aa(1));
-rpf = @(zz) pfeval(zz, pol, aa(1:end));
+rpf = @(zz) pfeval(zz, pol, aa(1:end));     % get function handle for partial fraction rational filter
 
 %% 3b. Compute approximate application y ~= r(L)x
 
 % yr = applyrLx(x,L,pol,aa(2:end),a0=aa(1));
-yr = applyrLx(x,L,pol,aa);
+yr = applyrLx(x,L,pol,aa);                  % compute r(L)
 
 %% 4a. Compute polynomial approximation p(lambda) ~= h(lambda)
 
-p = chebfun(h, [0 2*max(dd)]);
+p = chebfun(h, [0 2*max(dd)]);              % compute polynomial approximation to filter
 % p0 = chebfun(h, [0 2*max(dd)], 'splitting', 'on');
 % p = polyfit(p0,40);
-cc = chebcoeffs(p);
+cc = chebcoeffs(p);                         % get chebyshev coefficients of polynomial approx.
 
 %% 4b. Compute approximate application y ~= p(L)x
 
-% deg = length(pol);
-deg = 2*length(pol);
+% deg = length(cc)-1;
+% deg = length(pol)-1;
+deg = 2*length(pol)-1;                      % for fair comparison, equate number of free params
+                                            % a degree n rational has 2n params, deg n poly has n+1
+                                            % cheb polynomials are orthogonal so can truncate coeffs freely
 
-Ls = (2*L - (2*max(dd))*eye(n))/(2*max(dd));
+Ls = (2*L - (2*max(dd))*eye(n))/(2*max(dd));    % scaled Laplacian for numerical stability
 
-vprev = x;
+vprev = x;                                      % evaluate p(L) by chebyshev recurrence
 vcurr = Ls*x;
 yp = cc(1)*vprev + cc(2)*vcurr;
 for j = 3:(deg+1)
@@ -175,7 +181,7 @@ end
     legend(["$x$" "$y$" "$y_h$"],"Location","best")
     %%
     figure();
-    subplot(211); hold on;
+    subplot(311); hold on;
     plot(yh,"-",LW,lw);
     plot(yr,"-",LW,lw);
     plot(yp,"-",LW,lw);
@@ -183,11 +189,18 @@ end
     ylabel("Output")
     legend(["Exact" "Rational" "Polynomial"])
     
-    subplot(212); hold on;
+    subplot(312); hold on;
     semilogy(abs(yh-yr),"-",LW,lw);
     semilogy(abs(yh-yp),"-",LW,lw);
     xlim([0 n])
     ylabel("Error")
+    legend(["Rational" "Polynomial"])
+
+    subplot(313); hold on;
+    plot(real(yh-yr),"-",LW,lw);
+    plot(real(yh-yp),"-",LW,lw);
+    xlim([0 n])
+    ylabel("Signed error")
     legend(["Rational" "Polynomial"])
     
     %%
