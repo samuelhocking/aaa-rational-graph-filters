@@ -1,3 +1,3 @@
 function h = idealBPF(low,high)
-    h = @(lambda) lambda .* ((lambda >= low) & (lambda <= high));
+    h = @(lambda) 1 .* ((lambda >= low) & (lambda <= high));
 end

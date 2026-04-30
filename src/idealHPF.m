@@ -1,3 +1,3 @@
 function h = idealHPF(cutoff)
-    h = @(lambda) lambda .* (lambda >= cutoff);
+    h = @(lambda) 1 .* (lambda >= cutoff);
 end
