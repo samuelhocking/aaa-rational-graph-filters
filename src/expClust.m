@@ -1,4 +1,4 @@
-function I = expClust(m, opts)
+function I = expClust(m, opts);
     % produces logspaced points on [a,b] clustered near a
     % reverse = true clusters them near b 
     arguments
