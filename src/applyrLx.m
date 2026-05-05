@@ -8,11 +8,13 @@ function y = applyrLx(x,L,pol,res,opts)
     end
     n = length(x);
     npol = length(pol);
-    yj = zeros(n,npol);
+    y = opts.a0*x;
     for j = 1:npol
-        Lj = L-pol(j)*eye(n);
-        [Qj,Rj] = qr(Lj);
-        yj(:,j) = Rj \ (Qj' * x);
+        y = y + res(j) * ((L-pol(j)*eye(n)) \ x);
+        % Lj = L-pol(j)*eye(n);
+        % [Qj,Rj] = qr(Lj);
+        % yj(:,j) = Rj \ (Qj' * x);
+        % yj(:,j) = Lj \ x;
     end
-    y = opts.a0 + yj * res;
+    % y = opts.a0*x + yj * res;
 end
