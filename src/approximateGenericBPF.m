@@ -33,7 +33,7 @@ h_generic = idealBPF(cutoff_lo,cutoff_hi);
 %% 2. Compute rational approximation r(lambda) ~= h(lambda)
 
 % generic upper bound for lambda is 2*max(degree)
-m_equi = 50000;
+m_equi = 100000;
 zz = linspace(-1,1,m_equi).';                     % basic equispaced grid
 eps = 1e-12;                                % define perturbation
 zz = [zz; cutoff_lo; cutoff_hi; cutoff_lo-eps; cutoff_lo+eps; cutoff_hi-eps; cutoff_hi+eps];    % manually add points very close to the jumps
