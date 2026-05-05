@@ -64,7 +64,6 @@ rL = @(x) real(applyrLx(x,L,pol_r,res_r));
 
 poly_deg = 2*length(pol)-1;
 cheb_poly_coeffs_deg = cheb_poly_coeffs(1:poly_deg+1);
-
 L_p = alpha_p * L + beta_p*eye(n);
 
 p = @(zz) chebpolyval(flip(cheb_poly_coeffs_deg), alpha_p*zz + beta_p);
@@ -160,4 +159,4 @@ linkaxes([ax2 ax3],"x")
 
 % exportgraphics(f2, "./figures/exp_LPF_lindecay.png", 'Resolution', 300);
 % exportgraphics(f2, "./figures/exp_BPF_unif.png", 'Resolution', 300);
-exportgraphics(f2, "./figures/exp_HPF_unif.png", 'Resolution', 300);
+% exportgraphics(f2, "./figures/exp_HPF_unif.png", 'Resolution', 300);
