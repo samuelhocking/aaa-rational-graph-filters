@@ -4,7 +4,19 @@
 %   noisy intensities, applies an ideal low-pass filter h(L)x via eigendecomposition,
 %   and reports RMSE. Optional rational/polynomial variants can be plugged in later.
 
-clearvars -except colors LW lw MS ms fs cmap
+clear all
+close all
+
+set(groot, 'defaultAxesTickLabelInterpreter','latex')
+set(groot, 'defaultLegendInterpreter','latex')
+set(groot, 'DefaultTextInterpreter', 'latex')
+
+colors = get(groot,'defaultAxesColorOrder');
+
+LW = "LineWidth"; lw = 1.2;
+MS = "MarkerSize"; ms = 15;
+fs = 12;
+cmap = 'parula';
 
 H = 48;
 W = 48;
