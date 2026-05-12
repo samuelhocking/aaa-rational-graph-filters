@@ -155,4 +155,4 @@ linkaxes([ax2 ax3],"x")
 
 % exportgraphics(f2, "./figures/exp_LPF_lindecay.png", 'Resolution', 300);
 % exportgraphics(f2, "./figures/exp_BPF_unif.png", 'Resolution', 300);
-exportgraphics(f2, "./figures/exp_HPF_unif.png", 'Resolution', 300);
+% exportgraphics(f2, "./figures/exp_HPF_unif.png", 'Resolution', 300);
